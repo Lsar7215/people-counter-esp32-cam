@@ -9,6 +9,10 @@
 #include "camera_index.h"
 #include "camera_pins.h"
 
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
 #define FRAME_SIZE FRAMESIZE_QQVGA
 #define WIDTH 160
 #define HEIGHT 120
@@ -18,7 +22,17 @@
 #define BLOCK_DIFF_THRESHOLD 0.2
 #define IMAGE_DIFF_THRESHOLD 0.2
 #define DEBUG 1
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 32
+#define OLED_RESET -1
+
+#define I2C_SDA 13
+#define I2C_SCL 14
 #define FLASH_PIN 4
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
 
 /*
       Type in your Wi-Fi ssid and password
@@ -28,9 +42,6 @@ const char *password = "************";
 
 uint16_t prev_frame[H][W] = { 0 };
 uint16_t current_frame[H][W] = { 0 };
-uint16_t direc_left[H][W] = { 0 };
-uint16_t direc_right[H][W] = { 0 };
-uint16_t direc[H][W] = { 0 };
 int list[2] = { 0, 0 };
 int counter = -1, prevCounter = -1;
 int inCounter = 0;
@@ -42,14 +53,30 @@ bool capture_still();
 int motion_detect();
 void update_frame();
 void print_frame(uint16_t frame[H][W]);
-bool direction_detection(uint16_t frame[H][W]);
+bool direction_detection(uint16_t frame[H][W]); 
 int freq(uint16_t frame[H][W], uint16_t a);
 
-
 void setup() {
+  Wire.begin(I2C_SDA, I2C_SCL);
+  pinMode(FLASH_PIN, OUTPUT);
+
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;)
+      ;
+  }
+
   Serial.begin(115200);
   Serial.setDebugOutput(true);
-  pinMode(FLASH_PIN, OUTPUT);
+
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+
+  digitalWrite(FLASH_PIN, HIGH);
+  delay(1000);
+  digitalWrite(FLASH_PIN, LOW);
+
   WiFi.begin(ssid, password);
   Serial.print("Connecting to WiFi...");
   while (WiFi.status() != WL_CONNECTED) {
@@ -62,20 +89,28 @@ void setup() {
   Serial.print("Camera Stream Ready! Go to http://");
   Serial.print(WiFi.localIP());
   Serial.println("/");
+  Serial.println(setup_camera(FRAME_SIZE) ? "Camera Init OK" : "Camera Init ERR");
 
-  Serial.println(setup_camera(FRAME_SIZE) ? "Camera Init OK" : "Camera Init ERR"); 
   digitalWrite(FLASH_PIN, HIGH);
   delay(1000);
   digitalWrite(FLASH_PIN, LOW);
 }
 
 void loop() {
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.print("Total people in: ");
+  display.println("0");
+  display.print("Total people out: ");
+  display.println("0");
+  display.display();
+  delay(1000);
   ESP.getFreeHeap();
 
-  if (!capture_still()) {
-    Serial.println("Failed to capture image for motion detection. Skipping this loop iteration.");
-    return;
-  }
+    if (!capture_still()) {
+      Serial.println("Failed to capture image for motion detection.");
+      return;
+    }
 
   switch (motion_detect()) {
     case 0:
@@ -83,18 +118,17 @@ void loop() {
       list[1] = 0;
       break;
     case 1:
-      Serial.println("Entering "); 
+      Serial.println("Entering ");
       list[1] = 1;
-      delay(500);
+      delay(1000);
       break;
     case -1:
       Serial.println("Leaving ");
       list[1] = -1;
-      delay(500);
+      delay(1000);
       break;
   }
 
-  
   if ((list[0] == 0) && (list[1] == 1)) {
     counter++;
     inCounter++;
@@ -103,17 +137,26 @@ void loop() {
     counter--;
     outCounter++;
   }
-  list[0] = list[1];  
+  list[0] = list[1];
 
   if (counter != prevCounter) {
-    Serial.print("Total people in: ");  
-    Serial.println(inCounter);
-    Serial.print("Total people out: ");  
-    Serial.println(outCounter);
-  } 
+    // Serial.print("Total people in: ");
+    // Serial.println(inCounter);
+    // Serial.print("Total people out: ");
+    // Serial.println(outCounter);
+
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.print("Total people in: ");
+    display.println(inCounter);
+    display.print("Total people out: ");
+    display.println(outCounter);
+    display.display();
+    delay(1000);
+  }
   prevCounter = counter;
   update_frame();
-  delay(2000);
+  delay(1000);
 }
 
 bool setup_camera(framesize_t frameSize) {
@@ -137,10 +180,10 @@ bool setup_camera(framesize_t frameSize) {
   config.pin_sscb_scl = SIOC_GPIO_NUM;
   config.pin_pwdn = PWDN_GPIO_NUM;
   config.pin_reset = RESET_GPIO_NUM;
-  config.xclk_freq_hz = 20000000;
+  config.xclk_freq_hz = 10000000;
   config.pixel_format = PIXFORMAT_GRAYSCALE;
-  config.frame_size = frameSize;  
-  config.jpeg_quality = 12;       
+  config.frame_size = frameSize;
+  config.jpeg_quality = 15;
   config.fb_count = 1;
 
   bool ok = esp_camera_init(&config) == ESP_OK;
@@ -190,9 +233,10 @@ bool capture_still() {
 }
 
 bool direction_detection(uint16_t frame[H][W]) {
-
-  memset(direc_left, 0, sizeof(direc_left));
-  memset(direc_right, 0, sizeof(direc_right));
+  uint16_t direc_left[H][W] = { 0 };
+  uint16_t direc_right[H][W] = { 0 };
+  //   memset(direc_left, 0, sizeof(direc_left));
+  //   memset(direc_right, 0, sizeof(direc_right));
 
   for (int y = 0; y < H; y++) {
     for (int x = 0; x < W; x++) {
@@ -209,19 +253,20 @@ bool direction_detection(uint16_t frame[H][W]) {
   } else if (freq(direc_right, { 99 }) < freq(direc_left, { 99 })) {
     return true;
   }
-  return false;  
+  return false;
 }
 
 int motion_detect() {
-  uint16_t changes = { 0 };              
-  const uint16_t blocks = (WIDTH * HEIGHT) / (BLOCK_SIZE * BLOCK_SIZE);  
-  memset(direc, 0, sizeof(direc));               
+  uint16_t changes = { 0 };
+  const uint16_t blocks = (WIDTH * HEIGHT) / (BLOCK_SIZE * BLOCK_SIZE);
+  uint16_t direc[H][W] = { 0 };
+  //   memset(direc, 0, sizeof(direc));
   for (int y = 0; y < H; y++) {
     for (int x = 0; x < W; x++) {
       float current = (float)current_frame[y][x];
       float prev = (float)prev_frame[y][x];
       float delta = 0;
-      if (prev != 0) {  
+      if (prev != 0) {
         delta = abs(current - prev) / prev;
       } else if (current != 0) {
         delta = 1.0;
@@ -229,13 +274,13 @@ int motion_detect() {
 
       if (delta >= BLOCK_DIFF_THRESHOLD) {
 #if DEBUG
-        changes += 1;          
-        direc[y][x] = { 99 };  
+        changes += 1;
+        direc[y][x] = { 99 };
 #endif
       }
     }
   }
-  
+
 
   if ((1.0 * changes / blocks) > IMAGE_DIFF_THRESHOLD) {
     if (direction_detection(direc)) {
@@ -244,7 +289,7 @@ int motion_detect() {
       return -1;
     }
   } else {
-    return 0;  
+    return 0;
   }
 }
 
