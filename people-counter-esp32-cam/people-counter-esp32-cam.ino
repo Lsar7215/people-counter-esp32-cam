@@ -37,8 +37,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 /*
       Type in your Wi-Fi ssid and password
 */
-const char *ssid = "****************";
-const char *password = "************";
+// const char *ssid = "****************";
+// const char *password = "************";
 
 uint16_t prev_frame[H][W] = { 0 };
 uint16_t current_frame[H][W] = { 0 };
@@ -62,8 +62,6 @@ void setup() {
 
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
     Serial.println(F("SSD1306 allocation failed"));
-    for (;;)
-      ;
   }
 
   Serial.begin(115200);
@@ -183,12 +181,12 @@ bool setup_camera(framesize_t frameSize) {
   config.xclk_freq_hz = 10000000;
   config.pixel_format = PIXFORMAT_GRAYSCALE;
   config.frame_size = frameSize;
-  config.jpeg_quality = 15;
+  config.jpeg_quality = 4;
   config.fb_count = 1;
 
   bool ok = esp_camera_init(&config) == ESP_OK;
   if (!psramFound()) {
-    Serial.println("⚠️ PSRAM not found! Camera performance may be limited.");
+    Serial.println("PSRAM not found! Camera performance may be limited.");
     if (!ok) {
       Serial.println("Camera Init failed without PSRAM.");
       return false;

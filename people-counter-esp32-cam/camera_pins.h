@@ -1,4 +1,4 @@
-#if defined(CAMERA_MODEL_AI_THINKER)
+// #if defined(CAMERA_MODEL_AI_THINKER)
 #define PWDN_GPIO_NUM     32
 #define RESET_GPIO_NUM    -1
 #define XCLK_GPIO_NUM      0
@@ -17,6 +17,6 @@
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
 
-#else
-#error "Camera model not selected"
-#endif
+// #else
+// #error "Camera model not selected"
+// #endif
