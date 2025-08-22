@@ -15,7 +15,7 @@ Count the number of people entering and leaving a space using an ESP32-CAM with 
 - Detects motion and determines entry/exit direction
 - Counts number of people entering and leaving
 - Displays real-time count on OLED screen
-  
+
 ## 📦 Libraries Required
 
 - [`Adafruit_SSD1306`](https://github.com/adafruit/Adafruit_SSD1306)
@@ -30,6 +30,5 @@ To program the ESP32-CAM, install the ESP32 board support:
 3. In the “Additional Board Manager URLs” field, add the following:
   - https://espressif.github.io/arduino-esp32/package_esp32_index.json
   - https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
-  - https://static-cdn.m5stack.com/resource/arduino/package_m5stack_index.json
 4. Go to **Tools > Board > Boards Manager**
 5. Search for `esp32` and install the latest version by **Espressif Systems**
