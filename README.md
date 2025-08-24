@@ -1,13 +1,15 @@
 # People Counter with ESP32-CAM
 
-Count the number of people entering and leaving a space using an ESP32-CAM with an OV2640 camera module. The current count is displayed on a 0.91" I2C OLED screen.
+Track and count the number of people entering and leaving a space using an ESP32-CAM with an OV2640 camera module. The current count is displayed on a I2C OLED screen.
 
 ## 📷 Hardware Used
 
 - ESP32-CAM (AI Thinker) with OV2640 camera
-- ESP32-CAM MB (USB to serial adapter board)
-- 0.91" OLED display (I2C, 128x32 or 128x64)
-- Micro USB cable 
+- ESP32-CAM-MB (USB to serial adapter board) or
+- FT232RL (USB to serial adapter board)
+- OLED display (I2C, 128x32 or 128x64)
+- Micro USB cable (Only if using ESP32-CAM-MB)
+- Mini USB cable (Only if using FT232RL)
 - Jumper wires
 
 ## 🧠 Features
@@ -25,10 +27,7 @@ Count the number of people entering and leaving a space using an ESP32-CAM with 
 
 To program the ESP32-CAM, install the ESP32 board support:
 
-1. Open **Arduino IDE**
-2. Go to **File > Preferences**
-3. In the “Additional Board Manager URLs” field, add the following:
-  - https://espressif.github.io/arduino-esp32/package_esp32_index.json
-  - https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
-4. Go to **Tools > Board > Boards Manager**
-5. Search for `esp32` and install the latest version by **Espressif Systems**
+1. Open **Arduino IDE**            
+2. Go to **Tools > Board > Boards Manager**
+3. Search for `esp32` and install the latest version by **Espressif Systems**
+- [`Espressif Systems`](https://github.com/espressif/arduino-esp32)
