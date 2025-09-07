@@ -45,9 +45,8 @@ uint16_t current_frame[H][W] = { 0 };
 int list[2] = { 0, 0 };
 int counter = -1, prevCounter = -1;
 int inCounter = 0;
-int outCounter = 0;
+int outCounter = -1;
 
-void startCameraServer();
 bool setup_camera(framesize_t);
 bool capture_still();
 int motion_detect();
@@ -70,23 +69,17 @@ void setup() {
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(WHITE);
+  display.setCursor(0, 0);
+  display.print("Total people in: ");
+  display.println("0");
+  display.print("Total people out: ");
+  display.println("0");
+  display.display();
 
   digitalWrite(FLASH_PIN, HIGH);
   delay(1000);
   digitalWrite(FLASH_PIN, LOW);
 
-  WiFi.begin(ssid, password);
-  Serial.print("Connecting to WiFi...");
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("");
-  Serial.println("WiFi connected");
-  startCameraServer();
-  Serial.print("Camera Stream Ready! Go to http://");
-  Serial.print(WiFi.localIP());
-  Serial.println("/");
   Serial.println(setup_camera(FRAME_SIZE) ? "Camera Init OK" : "Camera Init ERR");
 
   digitalWrite(FLASH_PIN, HIGH);
@@ -95,14 +88,6 @@ void setup() {
 }
 
 void loop() {
-  display.clearDisplay();
-  display.setCursor(0, 0);
-  display.print("Total people in: ");
-  display.println("0");
-  display.print("Total people out: ");
-  display.println("0");
-  display.display();
-  delay(1000);
   ESP.getFreeHeap();
 
     if (!capture_still()) {
@@ -118,12 +103,12 @@ void loop() {
     case 1:
       Serial.println("Entering ");
       list[1] = 1;
-      delay(1000);
+      delay(500);
       break;
     case -1:
       Serial.println("Leaving ");
       list[1] = -1;
-      delay(1000);
+      delay(500);
       break;
   }
 
@@ -150,11 +135,10 @@ void loop() {
     display.print("Total people out: ");
     display.println(outCounter);
     display.display();
-    delay(1000);
   }
   prevCounter = counter;
   update_frame();
-  delay(1000);
+  delay(100);
 }
 
 bool setup_camera(framesize_t frameSize) {
